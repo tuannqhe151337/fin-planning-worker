@@ -22,35 +22,39 @@ public class AnnualReportScheduleService {
     private final ReportRepository reportRepository;
 
     // Chạy vào ngày 25 tháng 12 hàng năm
-    @Scheduled(cron = "0 0 0 25 12 ?")
+    @Scheduled(cron = "*/150 * * * * *")
     @Transactional
     public void generateAnnualReport() {
 
         // Generate annual report
         AnnualReportResult annualReportResult = annualReportRepository.getAnnualReport(LocalDate.now());
+        if (annualReportResult != null) {
 
-        AnnualReport annualReport = new AnnualReportMapperImpl().mapToAnnualReportMapping(annualReportResult);
+            AnnualReport annualReport = new AnnualReportMapperImpl().mapToAnnualReportMapping(annualReportResult);
 
-        // Generate report for annual report
-        List<ReportResult> reportResults = annualReportRepository.generateReport(LocalDate.now());
+            // Generate report for annual report
+            List<ReportResult> reportResults = annualReportRepository.generateReport(LocalDate.now());
+            if (reportResults != null) {
 
-        long totalCostOfYear = 0L;
+                long totalCostOfYear = 0L;
 
-        for (ReportResult reportResult : reportResults) {
-            totalCostOfYear += reportResult.getTotalExpense().longValue();
+                for (ReportResult reportResult : reportResults) {
+                    totalCostOfYear += reportResult.getTotalExpense().longValue();
+                }
+
+                List<Report> reports = new ArrayList<>();
+                reportResults.forEach(reportResult -> {
+                    Report report = new AnnualReportMapperImpl().mapToReportMapping(reportResult);
+                    report.setAnnualReport(annualReport);
+                    reports.add(report);
+                });
+
+                annualReport.setReports(reports);
+                annualReport.setTotalExpense(BigDecimal.valueOf(totalCostOfYear));
+
+                annualReportRepository.save(annualReport);
+                reportRepository.saveAll(reports);
+            }
         }
-
-        List<Report> reports = new ArrayList<>();
-        reportResults.forEach(reportResult -> {
-            Report report = new AnnualReportMapperImpl().mapToReportMapping(reportResult);
-            report.setAnnualReport(annualReport);
-            reports.add(report);
-        });
-
-        annualReport.setReports(reports);
-        annualReport.setTotalExpense(BigDecimal.valueOf(totalCostOfYear));
-
-        annualReportRepository.save(annualReport);
-        reportRepository.saveAll(reports);
     }
 }
