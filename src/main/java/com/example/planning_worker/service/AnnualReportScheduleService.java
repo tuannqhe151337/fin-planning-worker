@@ -22,7 +22,7 @@ public class AnnualReportScheduleService {
     private final ReportRepository reportRepository;
 
     // Chạy vào ngày 25 tháng 12 hàng năm
-    @Scheduled(cron = "*/150 * * * * *")
+    @Scheduled(cron = "0 0 0 25 12 ?")
     @Transactional
     public void generateAnnualReport() {
 

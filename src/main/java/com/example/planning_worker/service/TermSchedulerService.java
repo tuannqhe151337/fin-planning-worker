@@ -39,7 +39,7 @@ public class TermSchedulerService {
     private final FinancialPlanExpenseRepository planExpenseRepository;
     private final ExpenseStatusRepository expenseStatusRepository;
 
-    @Scheduled(cron = "*/30 * * * * *") // Execute at 12:00 AM every day
+    @Scheduled(cron = "0 00 00 * * *") // Execute at 12:00 AM every day
     @Transactional
     @Async
     public void startTerm() throws Exception {
@@ -69,12 +69,12 @@ public class TermSchedulerService {
         }
     }
 
-    @Scheduled(cron = "*/120 * * * * *") // Execute at 12:00 AM every day
+    @Scheduled(cron = "0 00 00 * * *") // Execute at 12:00 AM every day
     @Transactional
     @Async
     public void endTerm() throws Exception {
         //START TERM
-        List<Term> terms = termRepository.getListTermNeedToClose(TermCode.IN_PROGRESS, LocalDateTime.now());
+        List<Term> terms = termRepository.getListTermNeedToClose(TermCode.IN_PROGRESS, LocalDateTime.now().plusDays(1));
         //change status to CLOSED
         if (terms != null) {
             for (Term term : terms) {
