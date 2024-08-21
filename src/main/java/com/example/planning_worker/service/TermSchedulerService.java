@@ -34,7 +34,7 @@ public class TermSchedulerService {
     private final CurrencyExchangeRateRepository currencyExchangeRateRepository;
     private final DepartmentRepository departmentRepository;
     private final CostTypeRepository costTypeRepository;
-    private final ReportStatisticRepository reportStatisticalRepository;
+    private final ReportStatisticRepository reportStatisticRepository;
     private final FinancialPlanRepository planRepository;
     private final FinancialPlanExpenseRepository planExpenseRepository;
     private final ExpenseStatusRepository expenseStatusRepository;
@@ -143,7 +143,7 @@ public class TermSchedulerService {
         FinancialReport report = financialReportRepository.getReferenceByTermId(termId);
         if (report != null) {
 
-            List<CostStatisticalByCurrencyResult> costStaticalByCurrencies = reportStatisticalRepository.getListCostStatistical(report.getId(), ExpenseStatusCode.APPROVED);
+            List<CostStatisticalByCurrencyResult> costStaticalByCurrencies = reportStatisticRepository.getListCostStatistical(report.getId(), ExpenseStatusCode.APPROVED);
 
             if (costStaticalByCurrencies != null) {
                 List<ReportStatistical> reportStatistics = new ArrayList<>();
@@ -220,21 +220,18 @@ public class TermSchedulerService {
                             toAmount = exchangeRateHashMap.get(costStatisticalByCurrency.getDepartmentId() + "_" + costStatisticalByCurrency.getCostTypeId())
                                     .get(costStatisticalByCurrency.getMonth() + "/" + costStatisticalByCurrency.getYear())
                                     .get(defaultCurrency.getId());
-                            System.out.println("BUG____REPORT");
-                            System.out.println(costStatisticalByCurrency.getCost());
-                            System.out.println(toAmount);
-                            System.out.println(formAmount);
+
                             if (costStatisticalByCurrency.getCost() != null && toAmount != null && formAmount != null) {
-                                totalCost = totalCost.add(costStatisticalByCurrency.getCost().multiply(toAmount).divide(formAmount, 2, RoundingMode.CEILING));
+                                totalCost = totalCost.add(costStatisticalByCurrency.getCost().multiply(formAmount).divide(toAmount, 2, RoundingMode.CEILING));
                             }
 
                             if (costStatisticalByCurrency.getBiggestCost() != null && toAmount != null && formAmount != null) {
-                                biggestCost = costStatisticalByCurrency.getBiggestCost().multiply(toAmount).divide(formAmount, 2, RoundingMode.CEILING);
+                                biggestCost = costStatisticalByCurrency.getBiggestCost().multiply(formAmount).divide(toAmount, 2, RoundingMode.CEILING);
                             }
 
                             if (biggestCost != null) {
                                 if (maxBiggestCost.longValue() < biggestCost.longValue()) {
-                                    maxBiggestCost = costStatisticalByCurrency.getBiggestCost();
+                                    maxBiggestCost = biggestCost;
                                 }
                             }
                         }
@@ -256,14 +253,12 @@ public class TermSchedulerService {
                                     .costType(costTypeRepository.getReferenceById(costTypeId))
                                     .build());
                 }
-                reportStatisticalRepository.saveAll(reportStatistics);
+                reportStatisticRepository.saveAll(reportStatistics);
             }
         }
     }
 
     private CostResult calculateCost(List<TotalCostByCurrencyResult> costByCurrencyResults, Currency defaultCurrency) {
-
-
         if (costByCurrencyResults == null) {
             return CostResult.builder().cost(BigDecimal.valueOf(0))
                     .currency(defaultCurrency)
@@ -311,7 +306,7 @@ public class TermSchedulerService {
             for (TotalCostByCurrencyResult costByCurrency : fromCurrencyIdHashMap.get(fromCurrencyId)) {
                 BigDecimal formAmount = BigDecimal.valueOf(exchangeRateHashMap.get(costByCurrency.getMonth() + "/" + costByCurrency.getYear()).get(fromCurrencyId).longValue());
                 BigDecimal toAmount = BigDecimal.valueOf(exchangeRateHashMap.get(costByCurrency.getMonth() + "/" + costByCurrency.getYear()).get(defaultCurrency.getId()).longValue());
-                actualCost = actualCost.add(costByCurrency.getTotalCost().multiply(toAmount).divide(formAmount, 2, RoundingMode.CEILING));
+                actualCost = actualCost.add(costByCurrency.getTotalCost().multiply(formAmount).divide(toAmount, 2, RoundingMode.CEILING));
             }
         }
         return CostResult.builder().cost(actualCost).currency(defaultCurrency).build();
